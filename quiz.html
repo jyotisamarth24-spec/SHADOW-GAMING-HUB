@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaming Arena - Quiz Challenge</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;min-height:100vh;display:flex;align-items:center;
+ justify-content:center;padding:18px;
+ background:radial-gradient(circle at top,#173d68,#050914 70%);
+ color:white;font-family:Arial,sans-serif
+}
+.panel{
+ width:min(600px,100%);padding:26px;border-radius:22px;
+ background:#101d32;border:1px solid #36baff;
+ box-shadow:0 0 35px #008cff55;text-align:center
+}
+h1{color:#ffb52e;font-size:34px;margin:5px}
+h2{color:#69dcff}
+#question{font-size:21px;line-height:1.5;margin:24px 0}
+button{
+ cursor:pointer;border:0;border-radius:12px;padding:14px;
+ font-weight:bold;font-size:15px
+}
+.option{
+ display:block;width:100%;margin:10px 0;
+ background:#203954;color:white;border:1px solid #4c759d;
+ text-align:left
+}
+.option:hover:not(:disabled){background:#1769a5}
+.option:disabled{cursor:default;opacity:1}
+.correct{background:#087c43!important;border-color:#40ff9b}
+.wrong{background:#a82335!important;border-color:#ff8795}
+#next,#restart{
+ background:#ffae22;color:#111;margin-top:18px;
+ padding:14px 30px
+}
+#next:disabled{opacity:.4;cursor:not-allowed}
+.top{display:flex;justify-content:space-between;gap:10px}
+.stat{background:#071426;padding:10px;border-radius:10px;flex:1}
+.stat strong{display:block;color:#ffbd3d;font-size:22px}
+#feedback{min-height:28px;font-weight:bold;margin-top:12px}
+#result{display:none}
+#progress{height:9px;background:#30445d;border-radius:20px;overflow:hidden;margin:15px 0}
+#bar{height:100%;width:0;background:#00cfff}
+.small{color:#a9bed5;font-size:13px}
+</style>
+</head>
+<body>
+<div class="panel">
+ <div id="quiz">
+  <h1>GAMING ARENA</h1>
+  <h2>QUIZ CHALLENGE</h2>
+  <div class="top">
+   <div class="stat">QUESTION<strong id="number">1/10</strong></div>
+   <div class="stat">SCORE<strong id="score">0</strong></div>
+   <div class="stat">TIME<strong id="timer">15</strong></div>
+  </div>
+  <div id="progress"><div id="bar"></div></div>
+  <div id="question">Loading question...</div>
+  <div id="options"></div>
+  <div id="feedback"></div>
+  <button id="next" disabled onclick="nextQuestion()">NEXT QUESTION ➜</button>
+  <p class="small">Choose the correct answer before the timer runs out!</p>
+ </div>
+
+ <div id="result">
+  <h1>QUIZ COMPLETED!</h1>
+  <h2 id="resultTitle">Well done!</h2>
+  <p id="finalScore"></p>
+  <button id="restart" onclick="restartQuiz()">PLAY AGAIN</button>
+  <p><a href="index.html" style="color:#62d8ff">← Back to Gaming Arena</a></p>
+ </div>
+</div>
+
+<script>
+const questions=[
+ {q:"Which planet is known as the Red Planet?",a:["Venus","Mars","Jupiter","Saturn"],c:1},
+ {q:"What is the capital of India?",a:["Mumbai","Chennai","New Delhi","Kolkata"],c:2},
+ {q:"How many sides does a hexagon have?",a:["Five","Six","Seven","Eight"],c:1},
+ {q:"Which is the largest ocean?",a:["Atlantic","Indian","Arctic","Pacific"],c:3},
+ {q:"What is the chemical symbol for gold?",a:["Ag","Au","Fe","Go"],c:1},
+ {q:"Which gas do plants absorb during photosynthesis?",a:["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"],c:2},
+ {q:"How many players are on the field for one cricket team?",a:["9","10","11","12"],c:2},
+ {q:"Which is the fastest land animal?",a:["Lion","Cheetah","Horse","Tiger"],c:1},
+ {q:"What is 12 × 8?",a:["86","92","96","108"],c:2},
+ {q:"Which instrument measures temperature?",a:["Barometer","Thermometer","Compass","Speedometer"],c:1}
+];
+
+let index=0,score=0,time=15,interval=null,answered=false;
+
+function loadQuestion(){
+ answered=false;
+ time=15;
+ document.getElementById("timer").textContent=time;
+ document.getElementById("number").textContent=(index+1)+"/"+questions.length;
+ document.getElementById("score").textContent=score;
+ document.getElementById("bar").style.width=(index/questions.length*100)+"%";
+ document.getElementById("question").textContent=questions[index].q;
+ document.getElementById("feedback").textContent="";
+ document.getElementById("next").disabled=true;
+ document.getElementById("options").innerHTML="";
+
+ questions[index].a.forEach((answer,i)=>{
+  const btn=document.createElement("button");
+  btn.className="option";
+  btn.textContent=String.fromCharCode(65+i)+". "+answer;
+  btn.onclick=()=>chooseAnswer(i);
+  document.getElementById("options").appendChild(btn);
+ });
+
+ clearInterval(interval);
+ interval=setInterval(()=>{
+  if(answered)return;
+  time--;
+  document.getElementById("timer").textContent=time;
+  if(time<=0){
+   chooseAnswer(-1);
+  }
+ },1000);
+}
+
+function chooseAnswer(choice){
+ if(answered)return;
+ answered=true;
+ clearInterval(interval);
+ const correct=questions[index].c;
+ const buttons=document.querySelectorAll(".option");
+
+ buttons.forEach((btn,i)=>{
+  btn.disabled=true;
+  if(i===correct)btn.classList.add("correct");
+  else if(i===choice)btn.classList.add("wrong");
+ });
+
+ if(choice===correct){
+  score+=10;
+  document.getElementById("feedback").textContent="✓ Correct! +10 points";
+  document.getElementById("feedback").style.color="#54ff9b";
+ }else{
+  document.getElementById("feedback").textContent=
+   choice===-1?"⏰ Time's up!":"✗ Wrong answer!";
+  document.getElementById("feedback").style.color="#ff788a";
+ }
+ document.getElementById("score").textContent=score;
+ document.getElementById("next").disabled=false;
+ document.getElementById("next").textContent=
+  index===questions.length-1?"SEE RESULT":"NEXT QUESTION ➜";
+}
+
+function nextQuestion(){
+ if(!answered)return;
+ index++;
+ if(index<questions.length)loadQuestion();
+ else showResult();
+}
+
+function showResult(){
+ clearInterval(interval);
+ document.getElementById("quiz").style.display="none";
+ document.getElementById("result").style.display="block";
+ document.getElementById("finalScore").textContent=
+  "Your score: "+score+" / 100";
+ document.getElementById("resultTitle").textContent=
+  score>=80?"🏆 Quiz Champion!":
+  score>=50?"⭐ Great Job!":"💪 Keep Practising!";
+ document.getElementById("bar").style.width="100%";
+}
+
+function restartQuiz(){
+ index=0;score=0;
+ document.getElementById("quiz").style.display="block";
+ document.getElementById("result").style.display="none";
+ document.getElementById("next").textContent="NEXT QUESTION ➜";
+ loadQuestion();
+}
+loadQuestion();
+</script>
+</body>
+</html>
