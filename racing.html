@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gaming Arena - Racing</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d18;color:white;font-family:Arial;text-align:center;overflow:hidden}
+h2{margin:8px}
+#game{display:block;width:100%;height:72vh;background:#111}
+.hud{display:flex;justify-content:space-around;padding:8px;background:#101a2b;font-weight:bold}
+.controls{display:flex;justify-content:center;gap:12px;padding:12px}
+button{border:0;border-radius:12px;padding:15px 20px;background:#087cff;color:white;font-size:16px;font-weight:bold}
+#nitro{background:#ff6a00}
+#brake{background:#c62828}
+#start{background:#16a34a}
+</style>
+</head>
+<body>
+<h2>🏁 GAMING ARENA RACING</h2>
+<div class="hud">
+ <span>🏎️ Speed: <b id="speed">0</b></span>
+ <span>🪙 Coins: <b id="coins">0</b></span>
+ <span>🚀 Nitro: <b id="fuel">100</b>%</span>
+</div>
+<canvas id="game"></canvas>
+<div class="controls">
+ <button id="left">⬅️</button>
+ <button id="brake">BRAKE</button>
+ <button id="nitro">NITRO 🚀</button>
+ <button id="right">➡️</button>
+</div>
+<button id="start">START RACE</button>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+let W,H;
+function resize(){
+ W=canvas.width=innerWidth;
+ H=canvas.height=innerHeight*.72;
+}
+resize();addEventListener("resize",resize);
+
+let player=0,speed=0,coins=0,fuel=100;
+let roadOffset=0,objects=[],running=false;
+let nitro=false,braking=false;
+let last=0,spawn=0;
+
+function road(){
+ ctx.fillStyle="#277a35";
+ ctx.fillRect(0,0,W,H);
+ let horizon=H*.25;
+ ctx.fillStyle="#333943";
+ ctx.beginPath();
+ ctx.moveTo(W*.40,horizon);
+ ctx.lineTo(W*.60,horizon);
+ ctx.lineTo(W*.96,H);
+ ctx.lineTo(W*.04,H);
+ ctx.closePath();ctx.fill();
+
+ ctx.strokeStyle="#fff";
+ ctx.lineWidth=4;
+ for(let i=0;i<2;i++){
+  let x=W*(.5+(i-.5)*.12);
+  ctx.beginPath();
+  for(let y=horizon;y<H;y+=5){
+   let p=(y-horizon)/(H-horizon);
+   let xx=W*.5+(i===0?-1:1)*p*W*.42/3;
+   if(y===horizon)ctx.moveTo(xx,y);
+   else ctx.lineTo(xx,y);
+  }
+  ctx.stroke();
+ }
+ for(let i=0;i<12;i++){
+  let p=((i/12+roadOffset)%1);
+  let y=horizon+p*(H-horizon);
+  let x=W*.5;
+  let width=p*W*.85;
+  ctx.fillStyle=i%2?"#fff":"#e63946";
+  ctx.fillRect(x-width,y,5+p*7,12+p*25);
+  ctx.fillRect(x+width,y,5+p*7,12+p*25);
+ }
+ ctx.fillStyle="#fff";
+ for(let i=0;i<10;i++){
+  let p=((i/10+roadOffset)%1);
+  let y=horizon+p*(H-horizon);
+  let x=W*.5;
+  let d=p*W*.15;
+  ctx.fillRect(x-d,y,4+p*4,12+p*12);
+ }
+}
+
+function car(x,y,color,scale=1){
+ ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
+ ctx.fillStyle="#111";
+ ctx.fillRect(-23,-5,9,24);ctx.fillRect(14,-5,9,24);
+ ctx.fillStyle=color;
+ ctx.beginPath();
+ ctx.moveTo(-19,20);ctx.lineTo(-22,-12);
+ ctx.lineTo(-13,-31);ctx.lineTo(13,-31);
+ ctx.lineTo(22,-12);ctx.lineTo(19,20);
+ ctx.closePath();ctx.fill();
+ ctx.fillStyle="#9ee7ff";
+ ctx.fillRect(-13,-23,26,13);
+ ctx.fillStyle="#ff3030";
+ ctx.fillRect(-17,12,8,5);ctx.fillRect(9,12,8,5);
+ ctx.restore();
+}
+
+function spawnObject(){
+ let lane=[-.65,0,.65][Math.floor(Math.random()*3)];
+ objects.push({
+  x:lane,
+  y:H*.25,
+  type:Math.random()<.3?"coin":"car",
+  color:["#ffcc00","#00d9ff","#9b5cff"][Math.floor(Math.random()*3)]
+ });
+}
+
+function drawObjects(){
+ for(let o of objects){
+  let p=(o.y-H*.25)/(H*.75);
+  let x=W*.5+o.x*W*.42*p;
+  let size=12+p*42;
+  if(o.type==="coin"){
+   ctx.fillStyle="#ffd700";
+   ctx.beginPath();ctx.arc(x,o.y,size*.35,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle="#fff3a0";
+   ctx.font=size*.55+"px Arial";
+   ctx.fillText("$",x-size*.15,o.y+size*.17);
+  }else{
+   car(x,o.y,o.color,.25+p*.85);
+  }
+ }
+}
+
+function update(dt){
+ if(!running)return;
+ let acceleration=nitro&&fuel>0?1.8:1;
+ if(nitro&&fuel>0)fuel=Math.max(0,fuel-dt*.012);
+ else fuel=Math.min(100,fuel+dt*.003);
+ if(braking)speed=Math.max(0,speed-dt*.0008);
+ else speed=Math.min(nitro?280:180,speed+dt*.00035*acceleration);
+ if(speed<30)speed=Math.min(30,speed+dt*.0002);
+ roadOffset=(roadOffset+speed*dt*.000015)%1;
+ spawn+=dt;
+ if(spawn>850-Math.min(speed,250)*2){spawn=0;spawnObject()}
+ for(let o of objects)o.y+=dt*(.12+speed*.002);
+ objects=objects.filter(o=>o.y<H+80);
+ for(let o of objects){
+  let p=(o.y-H*.25)/(H*.75);
+  if(p>.75&&p<.96&&Math.abs(o.x-player)<.23){
+   if(o.type==="coin"){coins++;o.y=H+100}
+   else{speed=Math.max(0,speed-55);o.y=H+100}
+  }
+ }
+ document.getElementById("speed").textContent=Math.round(speed);
+ document.getElementById("coins").textContent=coins;
+ document.getElementById("fuel").textContent=Math.round(fuel);
+}
+
+function draw(){
+ road();
+ drawObjects();
+ let px=W*.5+player*W*.32;
+ car(px,H*.82,"#ff2020",1.35);
+ if(nitro&&fuel>0){
+  ctx.fillStyle="#00d9ff";
+  ctx.beginPath();
+  ctx.moveTo(px-12,H*.85);ctx.lineTo(px,H*.85+35+Math.random()*25);
+  ctx.lineTo(px+12,H*.85);ctx.fill();
+ }
+}
+
+function loop(t){
+ let dt=Math.min(t-last,40);last=t;
+ update(dt);draw();
+ requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+function moveLeft(){player=Math.max(-.8,player-.12)}
+function moveRight(){player=Math.min(.8,player+.12)}
+document.getElementById("left").onpointerdown=moveLeft;
+document.getElementById("right").onpointerdown=moveRight;
+document.getElementById("nitro").onpointerdown=()=>nitro=true;
+document.getElementById("nitro").onpointerup=()=>nitro=false;
+document.getElementById("nitro").onpointerleave=()=>nitro=false;
+document.getElementById("brake").onpointerdown=()=>braking=true;
+document.getElementById("brake").onpointerup=()=>braking=false;
+document.getElementById("brake").onpointerleave=()=>braking=false;
+
+document.getElementById("start").onclick=()=>{
+ running=true;speed=30;last=performance.now();
+ document.getElementById("start").textContent="RACE RUNNING!";
+};
+
+addEventListener("keydown",e=>{
+ if(e.key==="ArrowLeft"||e.key==="a")moveLeft();
+ if(e.key==="ArrowRight"||e.key==="d")moveRight();
+ if(e.key==="ArrowUp")nitro=true;
+ if(e.key==="ArrowDown")braking=true;
+});
+addEventListener("keyup",e=>{
+ if(e.key==="ArrowUp")nitro=false;
+ if(e.key==="ArrowDown")braking=false;
+});
+</script>
+</body>
+</html>
