@@ -2,210 +2,371 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gaming Arena - Racing</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Racing Legends | Gaming Arena</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#080d18;color:white;font-family:Arial;text-align:center;overflow:hidden}
-h2{margin:8px}
-#game{display:block;width:100%;height:72vh;background:#111}
-.hud{display:flex;justify-content:space-around;padding:8px;background:#101a2b;font-weight:bold}
-.controls{display:flex;justify-content:center;gap:12px;padding:12px}
-button{border:0;border-radius:12px;padding:15px 20px;background:#087cff;color:white;font-size:16px;font-weight:bold}
-#nitro{background:#ff6a00}
-#brake{background:#c62828}
-#start{background:#16a34a}
+body{margin:0;background:#050914;color:white;font-family:Arial;overflow:hidden}
+#game{display:block;width:100vw;height:100dvh}
+.hud{position:fixed;top:12px;left:12px;right:12px;display:flex;
+ justify-content:space-between;gap:8px;pointer-events:none;flex-wrap:wrap}
+.panel{background:#071528dc;border:1px solid #4c91d5;border-radius:12px;
+ padding:9px 13px;font-weight:bold;box-shadow:0 0 15px #008cff55}
+.panel small{display:block;color:#8dcfff;font-size:10px;margin-bottom:3px}
+#overlay{position:fixed;inset:0;background:#030817d9;display:flex;
+ align-items:center;justify-content:center;padding:20px;text-align:center}
+.menu{width:min(440px,95vw);padding:25px;background:#10233d;
+ border:1px solid #398bcb;border-radius:22px;box-shadow:0 0 35px #007bff55}
+h1{color:#00d9ff;font-size:35px;margin:8px}
+.menu p{color:#d2e6ff;line-height:1.5}
+button{border:0;border-radius:12px;padding:13px 19px;font-size:16px;
+ font-weight:bold;background:linear-gradient(90deg,#007bff,#00d9ff);
+ color:white;cursor:pointer}
+button:active{transform:scale(.96)}
+#controls{position:fixed;bottom:17px;left:0;right:0;
+ display:flex;justify-content:space-between;padding:0 18px;pointer-events:none}
+.group{display:flex;gap:10px}
+.control{pointer-events:auto;width:65px;height:62px;padding:5px;
+ background:#092442dd;border:1px solid #8bcfff;font-size:23px;
+ touch-action:none}
+#nitro{background:#b94708dd;width:85px;font-size:14px}
+#brake{background:#a51e32dd;width:75px;font-size:13px}
+#back{position:fixed;top:75px;left:12px;padding:8px 12px;
+ font-size:12px;background:#182b46}
+#message{font-size:13px;color:#a9c9ed}
+@media(min-width:800px){.control{width:75px;height:68px}}
 </style>
 </head>
 <body>
-<h2>🏁 GAMING ARENA RACING</h2>
-<div class="hud">
- <span>🏎️ Speed: <b id="speed">0</b></span>
- <span>🪙 Coins: <b id="coins">0</b></span>
- <span>🚀 Nitro: <b id="fuel">100</b>%</span>
-</div>
 <canvas id="game"></canvas>
-<div class="controls">
- <button id="left">⬅️</button>
- <button id="brake">BRAKE</button>
- <button id="nitro">NITRO 🚀</button>
- <button id="right">➡️</button>
+
+<div class="hud">
+ <div class="panel"><small>SPEED</small><span id="speed">0</span> KM/H</div>
+ <div class="panel"><small>COINS</small>🪙 <span id="coins">0</span></div>
+ <div class="panel"><small>DISTANCE</small><span id="distance">0</span> m</div>
+ <div class="panel"><small>NITRO</small><span id="fuel">100</span>%</div>
 </div>
-<button id="start">START RACE</button>
+
+<a href="index.html"><button id="back">← HOME</button></a>
+
+<div id="controls">
+ <div class="group">
+  <button class="control" id="left">⬅</button>
+  <button class="control" id="right">➡</button>
+ </div>
+ <div class="group">
+  <button class="control" id="brake">BRAKE</button>
+  <button class="control" id="nitro">NITRO 🚀</button>
+ </div>
+</div>
+
+<div id="overlay">
+ <div class="menu">
+  <div style="font-size:65px">🏎️</div>
+  <h1>RACING LEGENDS</h1>
+  <p>Race through traffic, collect coins, avoid crashes and activate nitro to reach top speed!</p>
+  <p id="message">Keyboard: ← → to steer, ↑ to accelerate, ↓ to brake, SPACE for nitro.</p>
+  <button id="start">START RACE 🏁</button>
+ </div>
+</div>
 
 <script>
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
-let W,H;
+const $=id=>document.getElementById(id);
+
+let W=0,H=0,DPR=1;
 function resize(){
- W=canvas.width=innerWidth;
- H=canvas.height=innerHeight*.72;
+ DPR=Math.min(devicePixelRatio||1,2);
+ W=innerWidth;H=innerHeight;
+ canvas.width=W*DPR;canvas.height=H*DPR;
+ canvas.style.width=W+"px";canvas.style.height=H+"px";
+ ctx.setTransform(DPR,0,0,DPR,0,0);
 }
-resize();addEventListener("resize",resize);
+addEventListener("resize",resize);resize();
 
-let player=0,speed=0,coins=0,fuel=100;
-let roadOffset=0,objects=[],running=false;
-let nitro=false,braking=false;
-let last=0,spawn=0;
+let running=false,gameOver=false;
+let player=0,speed=0,coins=0,distance=0,fuel=100;
+let roadMove=0,spawn=0,last=0;
+let objects=[],particles=[];
+let left=false,right=false,brake=false,nitro=false;
+let best=0;
 
-function road(){
- ctx.fillStyle="#277a35";
- ctx.fillRect(0,0,W,H);
- let horizon=H*.25;
- ctx.fillStyle="#333943";
- ctx.beginPath();
- ctx.moveTo(W*.40,horizon);
- ctx.lineTo(W*.60,horizon);
- ctx.lineTo(W*.96,H);
- ctx.lineTo(W*.04,H);
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function random(a,b){return a+Math.random()*(b-a)}
+function horizon(){return H*.29}
+function roadWidth(p){return W*(.08+.88*p)}
+function roadX(p){return W*.5}
+function screenY(p){return horizon()+p*(H-horizon())}
+
+function polygon(points,color){
+ ctx.fillStyle=color;ctx.beginPath();
+ ctx.moveTo(points[0][0],points[0][1]);
+ for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);
  ctx.closePath();ctx.fill();
+}
 
- ctx.strokeStyle="#fff";
- ctx.lineWidth=4;
- for(let i=0;i<2;i++){
-  let x=W*(.5+(i-.5)*.12);
-  ctx.beginPath();
-  for(let y=horizon;y<H;y+=5){
-   let p=(y-horizon)/(H-horizon);
-   let xx=W*.5+(i===0?-1:1)*p*W*.42/3;
-   if(y===horizon)ctx.moveTo(xx,y);
-   else ctx.lineTo(xx,y);
+function background(){
+ let sky=ctx.createLinearGradient(0,0,0,H);
+ sky.addColorStop(0,"#07172f");
+ sky.addColorStop(.55,"#3b86a4");
+ sky.addColorStop(1,"#b5c7b0");
+ ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+
+ let sun=ctx.createRadialGradient(W*.75,H*.18,5,W*.75,H*.18,W*.17);
+ sun.addColorStop(0,"#fff7c0");sun.addColorStop(1,"#f9a43b00");
+ ctx.fillStyle=sun;ctx.fillRect(W*.55,0,W*.4,H*.4);
+
+ // Distant mountains
+ polygon([[0,H*.31],[W*.12,H*.16],[W*.23,H*.29],
+ [W*.38,H*.13],[W*.55,H*.3],[W*.73,H*.17],
+ [W*.9,H*.3],[W,H*.2],[W,H*.43],[0,H*.43]],"#324b58");
+
+ // Hills
+ ctx.fillStyle="#315d43";
+ ctx.fillRect(0,H*.32,W,H*.68);
+
+ // roadside trees
+ for(let i=0;i<24;i++){
+  let p=((i/24+roadMove*.13)%1);
+  let y=screenY(p),scale=.12+p*.8;
+  let side=i%2===0?-1:1;
+  let x=W*.5+side*(roadWidth(p)*.65+W*.04);
+  ctx.fillStyle="#4a3022";
+  ctx.fillRect(x-3*scale,y-25*scale,6*scale,25*scale);
+  ctx.fillStyle=i%3===0?"#8bc34a":"#176c43";
+  ctx.beginPath();ctx.arc(x,y-32*scale,17*scale,0,Math.PI*2);ctx.fill();
+ }
+}
+
+function drawRoad(){
+ let top=horizon();
+ polygon([[W*.5-roadWidth(0)/2,top],
+ [W*.5+roadWidth(0)/2,top],
+ [W*.5+roadWidth(1)/2,H],
+ [W*.5-roadWidth(1)/2,H]],"#333941");
+
+ // Road edge
+ let stripe=roadMove%1;
+ for(let i=0;i<18;i++){
+  let p=(i/18+stripe/18)%1;
+  let p2=Math.min(1,p+.035);
+  let y1=screenY(p),y2=screenY(p2);
+  let w1=roadWidth(p),w2=roadWidth(p2);
+  let color=i%2===0?"#f6f6f6":"#df3434";
+  polygon([[W*.5-w1/2-5-p*8,y1],[W*.5-w1/2,y1],
+  [W*.5-w2/2,y2],[W*.5-w2/2-5-p2*8,y2]],color);
+  polygon([[W*.5+w1/2,y1],[W*.5+w1/2+5+p*8,y1],
+  [W*.5+w2/2+5+p2*8,y2],[W*.5+w2/2,y2]],color);
+ }
+
+ // Lane markings
+ for(let lane=1;lane<=2;lane++){
+  for(let i=0;i<15;i++){
+   let p=(i/15+roadMove*.85)%1;
+   let p2=Math.min(1,p+.025);
+   let y=screenY(p),y2=screenY(p2);
+   let x1=W*.5-roadWidth(p)/2+roadWidth(p)*lane/3;
+   let x2=W*.5-roadWidth(p2)/2+roadWidth(p2)*lane/3;
+   let width=1+p*5;
+   polygon([[x1-width,y],[x1+width,y],[x2+width,y2],[x2-width,y2]],
+   "#f5f4dc");
   }
-  ctx.stroke();
- }
- for(let i=0;i<12;i++){
-  let p=((i/12+roadOffset)%1);
-  let y=horizon+p*(H-horizon);
-  let x=W*.5;
-  let width=p*W*.85;
-  ctx.fillStyle=i%2?"#fff":"#e63946";
-  ctx.fillRect(x-width,y,5+p*7,12+p*25);
-  ctx.fillRect(x+width,y,5+p*7,12+p*25);
- }
- ctx.fillStyle="#fff";
- for(let i=0;i<10;i++){
-  let p=((i/10+roadOffset)%1);
-  let y=horizon+p*(H-horizon);
-  let x=W*.5;
-  let d=p*W*.15;
-  ctx.fillRect(x-d,y,4+p*4,12+p*12);
  }
 }
 
-function car(x,y,color,scale=1){
+function drawCar(x,y,color,scale=1,isPlayer=false){
  ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
- ctx.fillStyle="#111";
- ctx.fillRect(-23,-5,9,24);ctx.fillRect(14,-5,9,24);
- ctx.fillStyle=color;
- ctx.beginPath();
- ctx.moveTo(-19,20);ctx.lineTo(-22,-12);
- ctx.lineTo(-13,-31);ctx.lineTo(13,-31);
- ctx.lineTo(22,-12);ctx.lineTo(19,20);
- ctx.closePath();ctx.fill();
- ctx.fillStyle="#9ee7ff";
- ctx.fillRect(-13,-23,26,13);
- ctx.fillStyle="#ff3030";
- ctx.fillRect(-17,12,8,5);ctx.fillRect(9,12,8,5);
+
+ // shadow
+ ctx.fillStyle="#0008";ctx.beginPath();
+ ctx.ellipse(0,8,25,43,0,0,Math.PI*2);ctx.fill();
+
+ // wheels
+ ctx.fillStyle="#080b10";
+ ctx.fillRect(-25,-24,9,25);ctx.fillRect(16,-24,9,25);
+ ctx.fillRect(-25,22,9,22);ctx.fillRect(16,22,9,22);
+
+ // body
+ let body=ctx.createLinearGradient(-22,0,22,0);
+ body.addColorStop(0,"#681019");
+ body.addColorStop(.35,color);
+ body.addColorStop(1,"#ffffff55");
+ polygon([[-20,35],[-24,-23],[-15,-43],[15,-43],
+ [24,-23],[20,35]],body);
+
+ // windshield
+ polygon([[-15,-17],[-11,-35],[11,-35],[15,-17]],"#8bd9f4");
+ polygon([[-15,-13],[15,-13],[12,3],[-12,3]],"#152c3d");
+
+ // hood stripe
+ ctx.fillStyle=isPlayer?"#ffffff":"#ffffff66";
+ ctx.fillRect(-2,5,4,27);
+
+ // lights
+ ctx.fillStyle=isPlayer?"#ff2525":"#ffe5a0";
+ ctx.fillRect(-17,27,8,5);ctx.fillRect(9,27,8,5);
  ctx.restore();
 }
 
+function drawCoin(x,y,r){
+ let g=ctx.createRadialGradient(x-r/3,y-r/3,1,x,y,r);
+ g.addColorStop(0,"#fff6a5");g.addColorStop(.5,"#ffd700");
+ g.addColorStop(1,"#b87500");
+ ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle="#fff1a0";ctx.lineWidth=2;
+ ctx.beginPath();ctx.arc(x,y,r*.65,0,Math.PI*2);ctx.stroke();
+ ctx.fillStyle="#7a4900";ctx.font="bold "+r+"px Arial";
+ ctx.textAlign="center";ctx.fillText("$",x,y+r*.35);
+}
+
 function spawnObject(){
- let lane=[-.65,0,.65][Math.floor(Math.random()*3)];
- objects.push({
-  x:lane,
-  y:H*.25,
-  type:Math.random()<.3?"coin":"car",
-  color:["#ffcc00","#00d9ff","#9b5cff"][Math.floor(Math.random()*3)]
- });
+ let lane=Math.floor(random(0,3));
+ let type=Math.random()<.35?"coin":"car";
+ objects.push({lane,p:0,type,color:["#05bce8","#f5a623","#9a6bff","#eeeeee"][Math.floor(random(0,4))],passed:false});
 }
 
 function drawObjects(){
  for(let o of objects){
-  let p=(o.y-H*.25)/(H*.75);
-  let x=W*.5+o.x*W*.42*p;
-  let size=12+p*42;
-  if(o.type==="coin"){
-   ctx.fillStyle="#ffd700";
-   ctx.beginPath();ctx.arc(x,o.y,size*.35,0,Math.PI*2);ctx.fill();
-   ctx.fillStyle="#fff3a0";
-   ctx.font=size*.55+"px Arial";
-   ctx.fillText("$",x-size*.15,o.y+size*.17);
-  }else{
-   car(x,o.y,o.color,.25+p*.85);
+  let p=o.p;
+  let y=screenY(p);
+  let road=roadWidth(p);
+  let x=W*.5-road/2+road*(o.lane+.5)/3;
+  let size=.15+p*1.0;
+  if(o.type==="coin")drawCoin(x,y,5+size*13);
+  else drawCar(x,y,o.color,.12+size*.55,false);
+ }
+}
+
+function addParticles(x,y,color){
+ for(let i=0;i<3;i++){
+  particles.push({x,y,vx:random(-2,2),vy:random(1,5),
+  life:random(15,35),color});
+ }
+}
+function drawParticles(dt){
+ for(let p of particles){
+  p.x+=p.vx*dt*.06;p.y+=p.vy*dt*.06;p.life-=dt*.05;
+  ctx.globalAlpha=clamp(p.life/30,0,1);
+  ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,4,4);
+ }
+ ctx.globalAlpha=1;
+ particles=particles.filter(p=>p.life>0);
+}
+
+function drawPlayer(){
+ let x=W*.5+player*roadWidth(1)*.38;
+ let y=H*.82;
+ drawCar(x,y,"#ed1738",1.15,true);
+ if(nitro&&fuel>0&&running){
+  for(let i=0;i<3;i++){
+   polygon([[x-12+i*10,y+37],[x-7+i*10,y+37],
+   [x-10+i*10,y+random(60,100)]],"#00d9ff");
   }
+  addParticles(x,y+50,"#00cfff");
  }
 }
 
 function update(dt){
  if(!running)return;
+ let seconds=dt/1000;
  let acceleration=nitro&&fuel>0?1.8:1;
- if(nitro&&fuel>0)fuel=Math.max(0,fuel-dt*.012);
- else fuel=Math.min(100,fuel+dt*.003);
- if(braking)speed=Math.max(0,speed-dt*.0008);
- else speed=Math.min(nitro?280:180,speed+dt*.00035*acceleration);
- if(speed<30)speed=Math.min(30,speed+dt*.0002);
- roadOffset=(roadOffset+speed*dt*.000015)%1;
+
+ if(left)player-=seconds*1.5;
+ if(right)player+=seconds*1.5;
+ player=clamp(player,-.85,.85);
+
+ if(brake)speed-=seconds*110;
+ else speed+=seconds*(nitro?105:48);
+ speed=clamp(speed,0,nitro?290:210);
+
+ if(nitro&&fuel>0)fuel-=seconds*24;
+ else fuel+=seconds*7;
+ fuel=clamp(fuel,0,100);
+
+ distance+=speed*seconds*.055;
+ roadMove+=seconds*(speed/90);
  spawn+=dt;
- if(spawn>850-Math.min(speed,250)*2){spawn=0;spawnObject()}
- for(let o of objects)o.y+=dt*(.12+speed*.002);
- objects=objects.filter(o=>o.y<H+80);
+
+ if(spawn>Math.max(420,1050-speed*2)){
+  spawn=0;spawnObject();
+ }
+
  for(let o of objects){
-  let p=(o.y-H*.25)/(H*.75);
-  if(p>.75&&p<.96&&Math.abs(o.x-player)<.23){
-   if(o.type==="coin"){coins++;o.y=H+100}
-   else{speed=Math.max(0,speed-55);o.y=H+100}
+  o.p+=seconds*(.13+speed/700);
+  let lanePos=(o.lane-1)*.65;
+  if(o.p>.78&&o.p<.98&&Math.abs(player-lanePos)<.3&&!o.passed){
+   o.passed=true;
+   if(o.type==="coin"){
+    coins++;addParticles(W*.5+player*roadWidth(1)*.38,H*.82,"#ffd700");
+   }else{
+    speed*=.35;
+    addParticles(W*.5+player*roadWidth(1)*.38,H*.82,"#ff6545");
+   }
   }
  }
- document.getElementById("speed").textContent=Math.round(speed);
- document.getElementById("coins").textContent=coins;
- document.getElementById("fuel").textContent=Math.round(fuel);
+ objects=objects.filter(o=>o.p<1.12);
+
+ $("speed").textContent=Math.round(speed);
+ $("coins").textContent=coins;
+ $("distance").textContent=Math.floor(distance);
+ $("fuel").textContent=Math.round(fuel);
+
+ if(speed>0&&Math.random()<.02)addParticles(W*.5,H*.94,"#ffffff55");
 }
 
-function draw(){
- road();
- drawObjects();
- let px=W*.5+player*W*.32;
- car(px,H*.82,"#ff2020",1.35);
- if(nitro&&fuel>0){
-  ctx.fillStyle="#00d9ff";
-  ctx.beginPath();
-  ctx.moveTo(px-12,H*.85);ctx.lineTo(px,H*.85+35+Math.random()*25);
-  ctx.lineTo(px+12,H*.85);ctx.fill();
+function render(dt){
+ background();drawRoad();drawObjects();drawPlayer();drawParticles(dt);
+ // Motion blur streaks during nitro
+ if(nitro&&fuel>0&&running){
+  ctx.strokeStyle="#a4eaff66";ctx.lineWidth=2;
+  for(let i=0;i<14;i++){
+   let x=random(0,W),y=random(H*.35,H);
+   ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+random(10,50));ctx.stroke();
+  }
  }
 }
 
 function loop(t){
- let dt=Math.min(t-last,40);last=t;
- update(dt);draw();
+ let dt=Math.min(t-last||16,40);last=t;
+ update(dt);render(dt);
  requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-function moveLeft(){player=Math.max(-.8,player-.12)}
-function moveRight(){player=Math.min(.8,player+.12)}
-document.getElementById("left").onpointerdown=moveLeft;
-document.getElementById("right").onpointerdown=moveRight;
-document.getElementById("nitro").onpointerdown=()=>nitro=true;
-document.getElementById("nitro").onpointerup=()=>nitro=false;
-document.getElementById("nitro").onpointerleave=()=>nitro=false;
-document.getElementById("brake").onpointerdown=()=>braking=true;
-document.getElementById("brake").onpointerup=()=>braking=false;
-document.getElementById("brake").onpointerleave=()=>braking=false;
+function startGame(){
+ objects=[];particles=[];player=0;speed=0;coins=0;
+ distance=0;fuel=100;roadMove=0;spawn=0;
+ running=true;gameOver=false;
+ $("overlay").style.display="none";
+ last=performance.now();
+}
+$("start").onclick=startGame;
 
-document.getElementById("start").onclick=()=>{
- running=true;speed=30;last=performance.now();
- document.getElementById("start").textContent="RACE RUNNING!";
-};
+function bindHold(id,down,up){
+ const b=$(id);
+ b.addEventListener("pointerdown",e=>{e.preventDefault();down();});
+ ["pointerup","pointerleave","pointercancel"].forEach(ev=>
+ b.addEventListener(ev,up));
+}
+bindHold("left",()=>left=true,()=>left=false);
+bindHold("right",()=>right=true,()=>right=false);
+bindHold("brake",()=>brake=true,()=>brake=false);
+bindHold("nitro",()=>nitro=true,()=>nitro=false);
 
 addEventListener("keydown",e=>{
- if(e.key==="ArrowLeft"||e.key==="a")moveLeft();
- if(e.key==="ArrowRight"||e.key==="d")moveRight();
- if(e.key==="ArrowUp")nitro=true;
- if(e.key==="ArrowDown")braking=true;
+ if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," "].includes(e.key))e.preventDefault();
+ if(e.key==="ArrowLeft"||e.key.toLowerCase()==="a")left=true;
+ if(e.key==="ArrowRight"||e.key.toLowerCase()==="d")right=true;
+ if(e.key==="ArrowDown"||e.key.toLowerCase()==="s")brake=true;
+ if(e.key==="ArrowUp"||e.key.toLowerCase()==="w")speed=Math.min(210,speed+3);
+ if(e.code==="Space")nitro=true;
 });
 addEventListener("keyup",e=>{
- if(e.key==="ArrowUp")nitro=false;
- if(e.key==="ArrowDown")braking=false;
+ if(e.key==="ArrowLeft"||e.key.toLowerCase()==="a")left=false;
+ if(e.key==="ArrowRight"||e.key.toLowerCase()==="d")right=false;
+ if(e.key==="ArrowDown"||e.key.toLowerCase()==="s")brake=false;
+ if(e.code==="Space")nitro=false;
 });
 </script>
 </body>
