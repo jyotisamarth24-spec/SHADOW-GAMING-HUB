@@ -2,473 +2,56 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GAMING ARENA - 3D Racing</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAMING ARENA</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;overflow:hidden;background:#050914;color:white;font-family:Arial,sans-serif}
-button{border:0;border-radius:12px;padding:12px 18px;background:#ff9d00;color:#111;font-weight:900;cursor:pointer}
-button:active{transform:scale(.94)}
-#game{position:fixed;inset:0}
-#menu,#crash,#complete,#levels{
- position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
- background:linear-gradient(135deg,#071329dd,#111827ee);z-index:5;text-align:center;padding:18px
+body{
+ margin:0;min-height:100vh;color:white;font-family:Arial,sans-serif;
+ background:radial-gradient(ellipse at top,#193d72,#080d1b 65%);
+ text-align:center;padding:25px 15px;
 }
-.panel{width:min(520px,95vw);max-height:90vh;overflow:auto;padding:25px;
- background:#101d32ee;border:1px solid #3988bb;border-radius:22px;box-shadow:0 0 35px #007bff55}
-h1{font-size:clamp(30px,7vw,55px);margin:5px;color:#ffb52e;text-shadow:0 0 20px #ff8500}
-h2{color:#65d9ff}
-p{color:#cbd8e8;line-height:1.5}
-.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:12px}
-select{padding:11px;border-radius:10px;background:#182b45;color:white;border:1px solid #4e789e}
-#hud{position:fixed;top:10px;left:0;right:0;z-index:2;display:none;pointer-events:none}
-.hudrow{display:flex;justify-content:space-between;align-items:flex-start;padding:8px;gap:8px}
-.stat{background:#071426cc;border:1px solid #ffffff35;border-radius:12px;padding:8px 12px;text-align:center;min-width:75px}
-.stat strong{display:block;font-size:20px;color:#ffbe3b}
-#speed{font-size:34px!important;color:#55eaff!important}
-#nitroWrap{width:130px;height:8px;background:#333;border-radius:9px;overflow:hidden;margin-top:5px}
-#nitroBar{height:100%;width:100%;background:linear-gradient(90deg,#00d9ff,#b6ffff)}
-#controls{position:fixed;bottom:20px;left:0;right:0;z-index:3;display:none;justify-content:space-between;padding:0 18px;pointer-events:none}
-.controlGroup{display:flex;gap:12px;align-items:end}
-.ctrl{pointer-events:auto;width:65px;height:65px;border-radius:50%;background:#142d49dd;border:2px solid #80dfff;color:white;font-size:25px;touch-action:none}
-.ctrl.boost{background:#ff7900dd;border-color:#ffd27b;font-size:14px}
-.ctrl.brake{background:#b52233dd;border-color:#ff9ba7;font-size:13px}
-#message{position:fixed;top:100px;left:0;right:0;text-align:center;z-index:2;color:#fff;font-size:18px;font-weight:bold;pointer-events:none;text-shadow:0 2px 8px #000}
-.levelGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:15px 0}
-.levelGrid button{padding:12px 2px}
-.levelGrid button:disabled{background:#39485b;color:#8995a3}
-.small{font-size:12px;color:#a9c1d8}
+header{padding:35px 10px}
+h1{font-size:clamp(38px,8vw,70px);margin:0;color:#00d9ff;
+ text-shadow:0 0 15px #008cff,0 0 35px #0055ff}
+header p{color:#c9d9f2;font-size:17px}
+.games{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+ gap:22px;max-width:900px;margin:35px auto}
+.card{background:#14233a;border:1px solid #31577f;border-radius:20px;
+ padding:25px 18px;box-shadow:0 10px 30px #0008}
+.art{font-size:75px;margin:10px}
+h2{margin:10px}
+.card p{color:#b9cce3;min-height:40px}
+a{display:inline-block;text-decoration:none}
+button{border:0;border-radius:12px;padding:14px 23px;
+ background:linear-gradient(90deg,#007bff,#00c6ff);
+ color:white;font-weight:bold;font-size:16px;cursor:pointer}
+button:hover{filter:brightness(1.2);transform:scale(1.04)}
+footer{color:#91a7c4;margin-top:40px}
 </style>
 </head>
 <body>
-<div id="game"></div>
+<header>
+ <h1>GAMING ARENA</h1>
+ <p>ONE WEBSITE. MULTIPLE GAMES. UNLIMITED FUN.</p>
+</header>
 
-<div id="menu">
- <div class="panel">
-  <h1>GAMING ARENA</h1>
-  <h2>3D STREET RACING</h2>
-  <p>Race through the highway. Collect coins. Use nitro. Unlock all 100 levels!</p>
-  <div class="row">
-   <label>Weather
-    <select id="weather">
-     <option value="day">Sunny Day</option>
-     <option value="night">Night</option>
-     <option value="rain">Rain</option>
-     <option value="random">Random</option>
-    </select>
-   </label>
-   <label>Car
-    <select id="carColor">
-     <option value="#e51b35">Racing Red</option>
-     <option value="#087bff">Electric Blue</option>
-     <option value="#eeeeee">Pearl White</option>
-     <option value="#161b27">Midnight Black</option>
-     <option value="#ffb400">Gold</option>
-    </select>
-   </label>
-  </div>
-  <div class="row">
-   <button onclick="startGame(1,false)">START CAREER</button>
-   <button onclick="showLevels()">LEVELS</button>
-  </div>
-  <div class="row">
-   <button onclick="startGame(1,true)">FREE DRIVE</button>
-  </div>
-  <p class="small">Keyboard: A / D or ← / → to steer · W to accelerate · S to brake · SPACE for nitro</p>
-  <p class="small">Progress is saved in this browser.</p>
- </div>
+<div class="games">
+ <section class="card">
+  <div class="art">🏎️</div>
+  <h2>RACING LEGENDS</h2>
+  <p>Race through traffic, collect coins and use nitro boost!</p>
+  <a href="racing.html"><button>PLAY RACING</button></a>
+ </section>
+
+ <section class="card">
+  <div class="art">🧠</div>
+  <h2>QUIZ CHALLENGE</h2>
+  <p>Test your knowledge and challenge your brain.</p>
+  <a href="quiz.html"><button>PLAY QUIZ</button></a>
+ </section>
 </div>
 
-<div id="levels" style="display:none">
- <div class="panel">
-  <h2>CAREER LEVELS</h2>
-  <p id="levelInfo"></p>
-  <div class="levelGrid" id="levelGrid"></div>
-  <button onclick="hideLevels()">BACK</button>
- </div>
-</div>
-
-<div id="hud">
- <div class="hudrow">
-  <div class="stat">LEVEL<strong id="levelText">1</strong></div>
-  <div class="stat">SPEED<strong id="speed">0</strong><span class="small">KM/H</span></div>
-  <div class="stat">COINS<strong id="coins">0</strong></div>
-  <div class="stat">DISTANCE<strong id="distance">0</strong><span class="small">M</span></div>
-  <div class="stat">NITRO<div id="nitroWrap"><div id="nitroBar"></div></div></div>
- </div>
-</div>
-<div id="message"></div>
-
-<div id="controls">
- <div class="controlGroup">
-  <button class="ctrl" id="left">◀</button>
-  <button class="ctrl" id="right">▶</button>
- </div>
- <div class="controlGroup">
-  <button class="ctrl brake" id="brake">BRAKE</button>
-  <button class="ctrl boost" id="boost">NITRO</button>
- </div>
-</div>
-
-<div id="crash" style="display:none">
- <div class="panel">
-  <h1 style="color:#ff465b">CRASH!</h1>
-  <h2>Your race is over</h2>
-  <p id="crashStats"></p>
-  <button onclick="restartGame()">RETRY LEVEL</button>
-  <button onclick="goMenu()">MAIN MENU</button>
- </div>
-</div>
-<div id="complete" style="display:none">
- <div class="panel">
-  <h1>LEVEL COMPLETE!</h1>
-  <h2>Great racing!</h2>
-  <p id="completeStats"></p>
-  <button onclick="nextLevel()">NEXT LEVEL</button>
-  <button onclick="goMenu()">MAIN MENU</button>
- </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-if(!window.THREE){alert("3D engine could not load. Check your internet connection.");}
-
-const $=id=>document.getElementById(id);
-let scene,camera,renderer,clock;
-let player,roadGroup,worldGroup,coinGroup,trafficGroup,rainGroup;
-let running=false,freeDrive=false,level=1;
-let speed=0,distance=0,coins=0,nitro=100;
-let steer=0,braking=false,boosting=false;
-let keys={},traffic=[],coinObjects=[],roadMarks=[],rainDrops=[];
-let laneX=[-10,-6,-2,2,6,10];
-let maxUnlocked=Math.max(1,Number(localStorage.getItem("gaUnlocked")||1));
-let selectedWeather="day",weatherMode="day",weatherTimer=0;
-let targetX=0,roadSpeed=0,spawnTimer=0,coinTimer=0;
-let crashState=false,finishDistance=1200;
-let carColor="#e51b35";
-
-scene=new THREE.Scene();
-scene.background=new THREE.Color(0x80c9ff);
-scene.fog=new THREE.Fog(0x80c9ff,45,180);
-camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,500);
-camera.position.set(0,6,12);
-camera.lookAt(0,1,-12);
-renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth,innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-$("game").appendChild(renderer.domElement);
-clock=new THREE.Clock();
-
-scene.add(new THREE.HemisphereLight(0xffffff,0x293448,1.6));
-const sun=new THREE.DirectionalLight(0xffffff,2);
-sun.position.set(-20,35,20);sun.castShadow=true;scene.add(sun);
-
-const mat=(color,roughness=.65,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
-const asphalt=mat(0x252a32),lineMat=mat(0xffffff),grassMat=mat(0x26713b);
-const goldMat=new THREE.MeshStandardMaterial({color:0xffa900,metalness:.85,roughness:.2,emissive:0x8b4300,emissiveIntensity:.45});
-const darkMat=mat(0x10131a,.5,.5),glassMat=new THREE.MeshStandardMaterial({color:0x65c7e9,metalness:.45,roughness:.12,transparent:true,opacity:.48});
-const tireMat=mat(0x090b10),rimMat=mat(0xaeb8c6,.25,.9);
-
-function box(parent,w,h,d,x,y,z,material){
- const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
- m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
-}
-function cylinder(parent,r1,r2,h,x,y,z,material,rotX=0){
- const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,16),material);
- m.position.set(x,y,z);m.rotation.x=rotX;m.castShadow=true;parent.add(m);return m;
-}
-function createCar(color){
- const g=new THREE.Group();
- const bodyMat=new THREE.MeshStandardMaterial({color,metalness:.7,roughness:.23});
- box(g,2.05,.48,4.3,0,.85,0,bodyMat);
- box(g,1.75,.28,1.15,0,1.12,-1.35,bodyMat);
- box(g,1.55,.2,.8,0,1.12,1.65,bodyMat);
- // Cabin and windows
- box(g,1.55,.72,1.85,0,1.48,-.15,glassMat);
- box(g,1.65,.13,1.95,0,1.87,-.15,bodyMat);
- // Front and rear details
- box(g,1.6,.13,.12,0,.65,-2.17,darkMat);
- box(g,.52,.17,.12,-.58,1.0,-2.18,mat(0xeaffff,.2));
- box(g,.52,.17,.12,.58,1.0,-2.18,mat(0xeaffff,.2));
- box(g,.65,.14,.1,-.6,.9,2.17,mat(0xff1728));
- box(g,.65,.14,.1,.6,.9,2.17,mat(0xff1728));
- // Spoiler
- box(g,1.9,.12,.35,0,1.6,1.75,darkMat);
- box(g,.12,.4,.12,-.65,1.42,1.75,darkMat);
- box(g,.12,.4,.12,.65,1.42,1.75,darkMat);
- // Mirrors
- box(g,.3,.12,.28,-1.12,1.35,-.7,bodyMat);
- box(g,.3,.12,.28,1.12,1.35,-.7,bodyMat);
- // Side skirts
- box(g,.12,.2,2.8,-1.02,.55,0,darkMat);
- box(g,.12,.2,2.8,1.02,.55,0,darkMat);
- const wheels=[];
- for(const x of [-1.05,1.05])for(const z of [-1.4,1.4]){
-  const wheel=new THREE.Group();wheel.position.set(x,.58,z);g.add(wheel);
-  cylinder(wheel,.47,.47,.3,0,0,0,tireMat,Math.PI/2);
-  cylinder(wheel,.27,.27,.32,0,0,0,rimMat,Math.PI/2);
-  cylinder(wheel,.11,.11,.34,0,0,0,darkMat,Math.PI/2);
-  for(let i=0;i<8;i++){
-   const spoke=box(wheel,.045,.4,.04,0,0,0,mat(0xe5eaf0,.3,.8));
-   spoke.rotation.z=i*Math.PI/4;
-  }
-  wheels.push(wheel);
- }
- const glow=new THREE.PointLight(color,1.4,6);glow.position.set(0,.25,0);g.add(glow);
- g.userData.wheels=wheels;return g;
-}
-
-function makeRoad(){
- roadGroup=new THREE.Group();scene.add(roadGroup);
- box(roadGroup,25,.2,260,0,-.15,-100,asphalt);
- box(roadGroup,300,.1,260,0,-.32,-100,grassMat);
- for(let x=-12;x<=12;x+=4){
-  if(x===-12||x===12)continue;
-  for(let z=-220;z<20;z+=12){
-   const mark=box(roadGroup,.12,.025,5,x,-.035,z,lineMat);
-   roadMarks.push(mark);
-  }
- }
- for(const x of [-12.4,12.4])box(roadGroup,.25,.22,260,x,.02,-100,mat(0xffd34d));
-}
-
-function makeWorld(){
- worldGroup=new THREE.Group();scene.add(worldGroup);
- for(let z=-220;z<20;z-=13){
-  for(const side of [-1,1]){
-   const x=side*(17+Math.random()*12);
-   const height=8+Math.random()*22;
-   const building=box(worldGroup,5+Math.random()*5,height,5+Math.random()*5,x,height/2-.2,z,mat([0x344c68,0x4d5265,0x354b59,0x68536b][Math.floor(Math.random()*4)]));
-   for(let y=1;y<height-1;y+=2.5){
-    box(worldGroup,.08,.5,.08,x-1,y,z-2.55,mat(0xffd778));
-    box(worldGroup,.08,.5,.08,x+1,y,z-2.55,mat(0xffd778));
-   }
-  }
- }
-}
-
-function spawnCoin(z=-110){
- const g=new THREE.Group();
- const ring=new THREE.Mesh(new THREE.TorusGeometry(.62,.17,14,36),goldMat);
- g.add(ring);
- const face=new THREE.Mesh(new THREE.CircleGeometry(.48,32),mat(0xffc02b,.25,.6));
- face.position.z=.04;g.add(face);
- const canvas=document.createElement("canvas");canvas.width=128;canvas.height=128;
- const ctx=canvas.getContext("2d");
- ctx.fillStyle="#9a5100";ctx.font="bold 88px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("$",64,68);
- const texture=new THREE.CanvasTexture(canvas);
- const symbol=new THREE.Mesh(new THREE.PlaneGeometry(.7,.7),new THREE.MeshBasicMaterial({map:texture,transparent:true}));
- symbol.position.z=.08;g.add(symbol);
- g.position.set(laneX[Math.floor(Math.random()*6)],1.4,z);
- coinGroup.add(g);coinObjects.push(g);
-}
-
-function spawnTraffic(){
- const colors=[0x168aff,0xe9e9e9,0xffc400,0x36c58b,0x8b58d8];
- const car=createCar(colors[Math.floor(Math.random()*colors.length)]);
- car.scale.set(.82,.82,.82);
- car.position.set(laneX[Math.floor(Math.random()*6)],0,-150);
- trafficGroup.add(car);traffic.push(car);
-}
-
-function setupRain(){
- rainGroup=new THREE.Group();scene.add(rainGroup);rainDrops=[];
- const geo=new THREE.BufferGeometry(),positions=[];
- for(let i=0;i<500;i++)positions.push((Math.random()-.5)*45,Math.random()*25-3,-Math.random()*100);
- geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
- const rain=new THREE.Points(geo,new THREE.PointsMaterial({color:0x9dcfff,size:.12,transparent:true,opacity:.65}));
- rainGroup.add(rain);rainDrops.push(rain);
-}
-function setWeather(type){
- weatherMode=type;
- if(type==="random")type=["day","night","rain"][Math.floor(Math.random()*3)];
- const night=type==="night";
- scene.background=new THREE.Color(night?0x050b25:type==="rain"?0x526174:0x80c9ff);
- scene.fog=new THREE.Fog(night?0x050b25:type==="rain"?0x526174:0x80c9ff,45,180);
- sun.intensity=night?.25:type==="rain"?.65:2;
- rainGroup.visible=type==="rain";
-}
-
-function clearGame(){
- [roadGroup,worldGroup,coinGroup,trafficGroup,rainGroup,player].forEach(o=>{if(o)scene.remove(o)});
- traffic=[];coinObjects=[];roadMarks=[];rainDrops=[];
-}
-function buildGame(){
- clearGame();
- makeRoad();makeWorld();
- coinGroup=new THREE.Group();scene.add(coinGroup);
- trafficGroup=new THREE.Group();scene.add(trafficGroup);
- setupRain();
- player=createCar(carColor);player.position.set(0,0,5);scene.add(player);
- camera.position.set(0,6.5,13);camera.lookAt(0,1,-12);
- for(let i=0;i<12;i++)spawnCoin(-30-i*17);
- for(let i=0;i<5;i++)spawnTraffic();
-}
-
-function showLevels(){
- $("menu").style.display="none";$("levels").style.display="flex";
- $("levelInfo").textContent="Unlocked levels: "+maxUnlocked+" / 100";
- $("levelGrid").innerHTML="";
- for(let i=1;i<=100;i++){
-  const b=document.createElement("button");
-  b.textContent=i<=maxUnlocked?i:"🔒";
-  b.disabled=i>maxUnlocked;
-  b.onclick=()=>startGame(i,false);
-  $("levelGrid").appendChild(b);
- }
-}
-function hideLevels(){$("levels").style.display="none";$("menu").style.display="flex";}
-
-function startGame(n,free){
- level=n;freeDrive=free;speed=0;distance=0;coins=0;nitro=100;
- targetX=0;spawnTimer=0;coinTimer=0;crashState=false;
- finishDistance=1200+(level-1)*100;
- selectedWeather=$("weather").value;
- setWeather(selectedWeather);
- carColor=$("carColor").value;
- buildGame();
- $("menu").style.display="none";$("levels").style.display="none";
- $("crash").style.display="none";$("complete").style.display="none";
- $("hud").style.display="block";$("controls").style.display="flex";
- $("levelText").textContent=free?"FREE":level;
- $("message").textContent=free?"FREE DRIVE":"LEVEL "+level+" - RACE!";
- running=true;clock.getDelta();
-}
-function restartGame(){startGame(level,freeDrive);}
-function goMenu(){
- running=false;
- $("hud").style.display="none";$("controls").style.display="none";
- $("crash").style.display="none";$("complete").style.display="none";
- $("menu").style.display="flex";$("message").textContent="";
-}
-function endCrash(){
- running=false;
- $("crashStats").textContent="Distance: "+Math.floor(distance)+" m · Coins: "+coins;
- $("crash").style.display="flex";
-}
-function finishRace(){
- running=false;
- if(!freeDrive){
-  maxUnlocked=Math.max(maxUnlocked,Math.min(100,level+1));
-  localStorage.setItem("gaUnlocked",maxUnlocked);
- }
- $("completeStats").textContent="Coins collected: "+coins+" · Distance: "+Math.floor(distance)+" m";
- $("complete").style.display="flex";
-}
-function nextLevel(){startGame(Math.min(100,level+1),false);}
-
-function setHold(id,fn){
- const el=$(id);
- el.addEventListener("pointerdown",e=>{e.preventDefault();fn(true)});
- ["pointerup","pointerleave","pointercancel"].forEach(ev=>el.addEventListener(ev,()=>fn(false)));
-}
-setHold("left",v=>keys.left=v);setHold("right",v=>keys.right=v);
-setHold("brake",v=>braking=v);setHold("boost",v=>boosting=v);
-window.addEventListener("keydown",e=>{
- keys[e.key.toLowerCase()]=true;
- if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," "].includes(e.key))e.preventDefault();
-});
-window.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
-window.addEventListener("blur",()=>{keys={};braking=false;boosting=false;});
-
-function update(dt){
- if(!running)return;
- const difficulty=1+(level-1)*.025;
- const accelerate=keys.w||keys.arrowup;
- const brakeNow=braking||keys.s||keys.arrowdown;
- const boostNow=(boosting||keys[" "])&&nitro>0;
- if(accelerate||(!brakeNow&&!boostNow))speed+=dt*(accelerate?38:10);
- if(brakeNow)speed-=dt*95;
- if(boostNow){speed+=dt*95;nitro=Math.max(0,nitro-dt*25);}
- else nitro=Math.min(100,nitro+dt*5);
- speed=Math.max(0,Math.min(310* difficulty,speed));
- const steering=(keys.left||keys.a?-1:0)+(keys.right||keys.d?1:0);
- targetX+=steering*dt*(speed/60+2.5);
- targetX=Math.max(-11,Math.min(11,targetX));
- player.position.x+=(targetX-player.position.x)*Math.min(1,dt*8);
- player.rotation.z=-steering*.09;
- player.userData.wheels.forEach(w=>w.rotation.x-=speed*dt*.035);
- const move=speed*dt*.12;
- distance+=move*10;
- roadGroup.position.z+=move;
- worldGroup.position.z+=move;
- roadMarks.forEach(m=>{m.position.z+=move;if(m.position.z>15)m.position.z-=240});
- if(roadGroup.position.z>12)roadGroup.position.z=0;
- if(worldGroup.position.z>12)worldGroup.position.z=0;
- coinGroup.children.forEach(c=>{c.position.z+=move;c.rotation.y+=dt*2.8});
- traffic.forEach(t=>{t.position.z+=move*(.7+level*.012);t.userData.wheels.forEach(w=>w.rotation.x-=dt*2)});
- for(let i=coinObjects.length-1;i>=0;i--){
-  const c=coinObjects[i];
-  if(Math.abs(c.position.z-player.position.z)<2&&Math.abs(c.position.x-player.position.x)<1.4){
-   coins++;coinGroup.remove(c);coinObjects.splice(i,1);
-  }else if(c.position.z>15){coinGroup.remove(c);coinObjects.splice(i,1);}
- }
- for(let i=traffic.length-1;i>=0;i--){
-  const t=traffic[i];
-  if(Math.abs(t.position.z-player.position.z)<2.4&&Math.abs(t.position.x-player.position.x)<1.8){endCrash();return;}
-  if(t.position.z>18){trafficGroup.remove(t);traffic.splice(i,1);}
- }
- spawnTimer+=dt;coinTimer+=dt;
- if(spawnTimer>Math.max(.7,2.5-level*.012)){spawnTraffic();spawnTimer=0;}
- if(coinTimer>2.2){spawnCoin(-155);coinTimer=0;}
- if(weatherMode==="random"){
-  weatherTimer+=dt;
-  if(weatherTimer>28){setWeather(["day","night","rain"][Math.floor(Math.random()*3)]);weatherTimer=0;}
- }
- if(rainGroup.visible){
-  const p=rainDrops[0].geometry.attributes.position;
-  for(let i=0;i<p.count;i++){
-   p.setY(i,p.getY(i)-dt*35);
-   if(p.getY(i)<-3)p.setY(i,20);
-  }
-  p.needsUpdate=true;
- }
- camera.position.x+=(player.position.x*.35-camera.position.x)*dt*2;
- camera.position.y=6.5+Math.sin(performance.now()*.001)*.08;
- camera.lookAt(player.position.x*.2,1,-12);
- $("speed").textContent=Math.round(speed);
- $("coins").textContent=coins;
- $("distance").textContent=Math.floor(distance);
- $("nitroBar").style.width=nitro+"%";
- $("message").textContent=freeDrive?"FREE DRIVE":Math.max(0,Math.ceil(finishDistance-distance))+" M TO FINISH";
- if(!freeDrive&&distance>=finishDistance)finishRace();
-}
-
-function animate(){
- requestAnimationFrame(animate);
- const dt=Math.min(clock.getDelta(),.05);
- update(dt);
- if(player){
-  const boostLight=player.children.find(o=>o.isPointLight);
-  if(boostLight)boostLight.intensity=boosting?4:1.4;
- }
- renderer.render(scene,camera);
-}
-animate();
-
-window.addEventListener("resize",()=>{
- camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
- renderer.setSize(innerWidth,innerHeight);
-});
-</script>
-<a href="quiz.html" style="
-display:block;
-width:200px;
-margin:20px auto;
-padding:15px;
-background:orange;
-color:black;
-text-align:center;
-font-size:20px;
-font-weight:bold;
-text-decoration:none;
-border-radius:12px;">
-🧠 PLAY QUIZ
-</a>
- <a href="racing.html">
-<button>🏎️ PLAY RACING GAME</button>
-</a>
+<footer>© 2026 GAMING ARENA | PLAY • RACE • WIN</footer>
 </body>
 </html>
